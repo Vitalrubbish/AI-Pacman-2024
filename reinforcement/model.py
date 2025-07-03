@@ -24,9 +24,14 @@ class DeepQNetwork(Module):
         # Remember to set self.learning_rate, self.numTrainingGames,
         # and self.batch_size!
         "*** YOUR CODE HERE ***"
-        self.learning_rate = 0
-        self.numTrainingGames = 0
-        self.batch_size = 0
+        self.learning_rate = 0.02
+        self.numTrainingGames = 4000
+        self.batch_size = 32
+
+        self.layer1 = Linear(state_dim, 128)
+        self.layer2 = Linear(128, 64)
+        self.layer3 = Linear(64, action_dim)
+        self.optimizer = optim.SGD(self.parameters(), lr=self.learning_rate)
 
         "**END CODE"""
         self.double()
@@ -34,7 +39,7 @@ class DeepQNetwork(Module):
 
     def get_loss(self, states, Q_target):
         """
-        Returns the Squared Loss between Q values currently predicted 
+        Returns the Squared Loss between Q values currently predicted
         by the network, and Q_target.
         Inputs:
             states: a (batch_size x state_dim) numpy array
@@ -43,7 +48,13 @@ class DeepQNetwork(Module):
             loss node between Q predictions and Q_target
         """
         "*** YOUR CODE HERE ***"
+        Q_predicted = self.forward(states)
+        return mse_loss(Q_predicted, Q_target)
 
+    def sample_batch(self):
+        """从缓冲池随机采样一个batch"""
+        import random
+        return random.choice(self.replay_buffer)
 
     def forward(self, states):
         """
@@ -59,8 +70,8 @@ class DeepQNetwork(Module):
                 scores, for each of the actions
         """
         "*** YOUR CODE HERE ***"
+        return self.layer3(relu(self.layer2(relu(self.layer1(states)))))
 
-    
     def run(self, states):
         return self.forward(states)
 
@@ -78,3 +89,7 @@ class DeepQNetwork(Module):
             None
         """
         "*** YOUR CODE HERE ***"
+        self.optimizer.zero_grad()
+        loss = self.get_loss(states, Q_target)
+        loss.backward()
+        self.optimizer.step()
